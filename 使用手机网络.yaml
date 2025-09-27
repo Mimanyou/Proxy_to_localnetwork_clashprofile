@@ -1,0 +1,59 @@
+# 基础设置
+port: 7890              # 本地 HTTP 代理端口
+socks-port: 7891        # 本地 SOCKS5 代理端口
+allow-lan: true
+mode: rule              # 使用规则模式
+log-level: info
+
+# 节点配置（你的手机代理）
+proxies:
+  - name: "PhoneProxy"
+    type: http
+    server: 192.168.1.2   # 改成你手机的局域网 IP
+    port: 8080              # 改成 Every Proxy 提供的 SOCKS5 端口或者 HTTP 端口
+    udp: true
+
+# 代理组
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies:
+      - PhoneProxy
+      - DIRECT
+
+  - name: Direct
+    type: select
+    proxies:
+      - DIRECT
+      - PhoneProxy
+
+# 配置规则集提供者
+rule-providers:
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+# 规则配置
+rules:
+  - RULE-SET,proxy,Proxy      # 先匹配需要代理的域名
+  - RULE-SET,direct,Direct    # 再匹配需要直连的域名
+  - RULE-SET,cncidr,Direct    # 匹配国内 IP 段，直连
+  - GEOIP,CN,Direct           # 最终保障：中国 IP 直连
+  - MATCH,Proxy               # 其他全部走代理
